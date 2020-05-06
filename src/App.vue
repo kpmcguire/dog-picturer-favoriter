@@ -149,8 +149,8 @@ export default {
 }
 
 .thumb {
-  max-width: 200px;
-  max-height: 200px;
+  max-width: 100%;
+  height: auto;
 }
 
 .columns {
@@ -163,7 +163,7 @@ export default {
     flex: 1;
   }
 
-  .autocomplete-result-list {
+  .autocomplete {
     text-align: left;
   }
 
@@ -174,7 +174,7 @@ export default {
 
   .dog-list {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 33.33% 33.33% 33.33%;
     list-style-type: none;
 
     li {
