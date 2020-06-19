@@ -174,7 +174,7 @@ export default {
 
   .dog-list {
     display: grid;
-    grid-template-columns: 33.33% 33.33% 33.33%;
+    grid-template-columns: 33.333% 33.333% 33.333%;
     list-style-type: none;
 
     li {
