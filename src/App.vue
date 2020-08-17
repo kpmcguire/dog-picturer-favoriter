@@ -2,7 +2,7 @@
   #app
     label
       span Search for a dog breed
-      autocomplete(:search="search" :debounceTime='100')
+      autocomplete(:search="search" :debounceTime='110')
     .columns
       div.dog-list-container
         div(v-if="currentInputValue")
