@@ -1,42 +1,43 @@
 <template lang="pug">
-  #app
-    label
-      span Search for a dog breed
-      autocomplete(:search="search" :debounceTime='110')
-    .columns
-      div.dog-list-container
-        div(v-if="currentInputValue")
-          h2 Seach Results
-          ul.dog-list.results
-            li(v-for="(dog, i) in filteredDogs" :key="i")
-              button(@click='handleClicked(dog)' :data-url="dog.imageUrl" :data-name="dog.name") Add as favorite
-              div
-                img.thumb.lazy(:src="dog.imageUrl")
-                p {{dog.name}}
-        div(v-else)
-          h2 A Random Dog Picture
-          ul.dog-list.results
-            li(v-for="(dog, i) in randomDog" :key="i")
-              button(@click='handleClicked(dog)' :data-url="dog.imageUrl" :data-name="dog.name") Add as favorite
-              div
-                img.thumb.lazy(:src="dog.imageUrl")
-                p {{dog.name}}
+h1 Dog Picture Favoriter™
+label
+  label Search for a dog breed
+    input(list="dog_list" name="selected_dog" id="selected_dog" v-model="currentInputValue" v-on:input="getDogImage")
+  datalist(id="dog_list")
+    option(v-for="(dog, i) in dogs" :value="dog.name") {{dog.name}}
+.columns
+  div.dog-list-container
+    div(v-if="currentInputValue")
+      h2 Seach Results
+      ul.dog-list.results
+        li(v-for="(dog, i) in searchResults" :key="i")
+          button(@click='handleClicked(dog)' :data-url="dog.imageUrl" :data-name="dog.name") Add as favorite
+          div
+            img.thumb.lazy(:src="dog.imageUrl")
+            p {{dog.name}}
+    div(v-else)
+      h2 A Random Dog Picture
+      ul.dog-list.results(v-if="randomDog")
+        li
+          button(@click='handleClicked(randomDog)' :data-url="randomDog.imageUrl" :data-name="randomDog.name") Add as favorite
+          div
+            img.thumb.lazy(:src="randomDog.imageUrl")
+            p {{randomDog.name}}
 
-      div.dog-list-container
-        h2 Favorites
-        ul.dog-list.favorites
-          li(v-for="(dog, i) in checked" :key="i") 
-            button(@click='removeDog(i)') Remove from favorites
-            div
-              img.thumb.lazy(:src="dog.imageUrl")
-              p {{dog.name}}
+  div.dog-list-container
+    h2 Favorites
+    ul.dog-list.favorites
+      li(v-for="(dog, i) in checked" :key="i") 
+        button(@click='removeDog(i)') Remove from favorites
+        div
+          img.thumb.lazy(:src="dog.imageUrl")
+          p {{dog.name}}
 
 
 </template>
 
 <script>
 let DOGSTORAGE_KEY = 'kpmcguire-dog-storage'
-import axios from 'axios'
 
 var dogStorage = {
   fetch: function(){
@@ -47,52 +48,41 @@ var dogStorage = {
   }
 }
 
+
+
 export default {
   name: 'App',
 
-  data: function(){
+  data(){
     return{
       dogs: [],
       tempDogs: [],
       checked: dogStorage.fetch(),
       currentInputValue: '',
       randomDog: [],
-      loading: true
+      loading: true,
+      searchResults: []
     }
   },
-  mounted() {
-    axios.get('https://dog.ceo/api/breeds/list/all')
-      .then((dogs) => {
-        for (var breed in dogs.data.message) {
-          this.dogs.push({'name': breed, 'imageUrl': '' })
-        }
-        for (var dog in dogs.data.message) {
-          let my_dog = dog
-          axios.get(`https://dog.ceo/api/breed/${dog}/images/random`)
-            .then(response=>{
-              this.tempDogs.push({'name': my_dog, 'imageUrl': response.data.message, 'checked': false})
-            })
-            .finally(
-              this.getRandomDog,
-              this.dogs = this.tempDogs,
-            )
-        }
-      })
-  },
+  async created() {
+    let response = await fetch('https://dog.ceo/api/breeds/list/all')
+    
+    let dogs = await response.json()
+    
+    for (var breed in dogs.message) {
+      this.dogs.push({'name': breed, 'imageUrl': '' })
+    }
 
+    this.randomDog = this.dogs[Math.floor(Math.random()*this.dogs.length)];
+  },
+  
   computed: {
     filteredDogs(){
       return this.returnFullSearch(this.currentInputValue)
-    } 
+    },
+
   },
   methods: {
-    getRandomDog(){
-      if (this.randomDog.length  < 1) {
-        var item = this.dogs[Math.floor(Math.random() * this.dogs.length)];
-        this.randomDog.push({name: item.name, imageUrl: item.imageUrl})
-      }
-
-    },
     search(input) {
       this.currentInputValue = input
       if (input.length < 1) { return [] }
@@ -122,7 +112,41 @@ export default {
     },
     removeDog(dog) {
       this.checked.splice(dog, 1);
+    },
+    debounce(fn, time) {
+      let timeoutId;
+        return (...args) => {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(fn, time, ...args);
+        };
+    },
+    getDogImage() {
+      
+      let fn = this.debounce(()=>{
+        this.searchResults = []
+        
+        
+        this.filteredDogs.forEach((dog)=>{
+          let breed = JSON.parse(JSON.stringify(dog.name))
+          fetch(`https://dog.ceo/api/breed/${breed}/images/random`)
+            .then(response=>response.json())
+            .then((url)=>
+            {
+              
+              this.searchResults.push({name: breed, imageUrl: url.message})
+              
+              let uniqueSearchResults = [...new Set(this.searchResults)];
+              
+              this.searchResults = uniqueSearchResults;
+              
+            }
+            )        
+        })
+      }, 250);
+      
+      fn()
     }
+    
 
   },
   watch: {
@@ -130,8 +154,11 @@ export default {
       deep: true,
       handler: dogStorage.save
     },
-    loading: ()=>{
-      this.getRandomDog()
+    randomDog() {
+      let dog_name = this.randomDog.name
+      fetch(`https://dog.ceo/api/breed/${dog_name}/images/random`)
+        .then(response=>response.json())
+        .then((url)=>this.randomDog.imageUrl = url.message)
     }
   }
 
@@ -202,4 +229,15 @@ export default {
     }
   }
 }
+
+#selected_dog {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 2;
+  border-radius: 0.125rem;
+  border: 1px solid #767676;
+}
+
 </style>

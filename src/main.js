@@ -1,13 +1,6 @@
-import Vue from 'vue'
+import { createApp } from 'vue'
 import App from './App.vue'
-import Autocomplete from "@trevoreyre/autocomplete-vue";
-import "@trevoreyre/autocomplete-vue/dist/style.css";
+let app = createApp(App)
 
-Vue.use(Autocomplete);
+app.mount('#app')
 
-Vue.config.productionTip = false
-
-new Vue({
-  el: "#app",
-  render: (h) => h(App),
-});

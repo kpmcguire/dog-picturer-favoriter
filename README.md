@@ -1,4 +1,4 @@
-# kdogvue
+# kdogvue2
 
 ## Project setup
 ```
